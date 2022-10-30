@@ -20,7 +20,7 @@ if __name__ == '__main__':
         option = input("Opción: ")
 
         if option == "1":
-            print('Insertar un nuevo transacción')
+            print('Insertar una nueva transacción')
 
             id = input("Ingrese id: ")
             nombre = input("Ingrese nombre: ")
@@ -28,12 +28,16 @@ if __name__ == '__main__':
             nuevo_registro = Registro(id, nombre)
             cajero.new_transaction(nuevo_registro)
         elif option == "2":
-            print('Consultar todas las transacciones')
-            cajero.get_all_transactions()
+            print('Todas las transacciones')
+            cajero.get_all_transactions(cajero.get_next())
         elif option == "3":
             print('Consultar transacción')
+            id = input("Ingrese id: ")
+            cajero.find_transaction(cajero.get_next(), id)
         elif option == "4":
             print('Eliminar transacción')
+            id = input("Ingrese id: ")
+            cajero.delete_transaction(cajero.get_next(), id)
         elif option == "5":
             print('Salir')
             break

@@ -5,22 +5,23 @@ class Cajero(Nodo):
     def __init__(self, numero_transacciones=0):
         super().__init__()
         self.numero_transacciones = numero_transacciones
+        self.cab = None
 
     def start_service(self, nodo):
         self.set_next(nodo)
 
-    def new_transaction(self, next):
-        print(type(self.next))
-        if type(self.next) is Registro:
-            self.next.set_next(next)
+    def new_transaction(self, next:Registro):
+        next.set_next(self.next) # Apunta al nodo de manera circular
         self.set_next(next)
         self.numero_transacciones += 1
         print('Transacción exitosa')
 
     def get_all_transactions(self):
-        for i in range(self.numero_transacciones):
-            if type(self.next) is Registro:
-                print(self.next.get_next())
-
-    def __str__(self):
-        return str(self.data)
+        '''
+        Método que recorre toda la lista circular
+        '''
+        self.cab = self.get_next()
+        if type(self.cab) is Registro:
+            print(self.cab.nombre, self.cab.id)
+            self.cab = self.cab.get_next()
+            self.get_all_transactions()

@@ -58,3 +58,9 @@ class Cajero(Nodo):
                     nodo.set_next(nodo.get_next().get_next())
                     self.numero_transacciones -= 1
             self.delete_transaction(nodo.get_next(), id)
+        elif isinstance(nodo, Cajero):
+            if isinstance(nodo.get_next(), Registro):
+                if nodo.get_next().id == id:
+                    print(f'Eliminando -> ID: {nodo.get_next().id}, Nombre: {nodo.get_next().nombre}')
+                    nodo.set_next(nodo.get_next().get_next())
+                    self.numero_transacciones -= 1

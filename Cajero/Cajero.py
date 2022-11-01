@@ -2,9 +2,9 @@ from Nodo.Nodo import Nodo
 from Registro.Registro import Registro
 
 class Cajero(Nodo):
-    def __init__(self, numero_transacciones=0):
+    def __init__(self, numero_clientes=0):
         super().__init__()
-        self.numero_transacciones = numero_transacciones
+        self.numero_clientes = numero_clientes
         self.cab = None
 
     def start_service(self, nodo):
@@ -18,7 +18,7 @@ class Cajero(Nodo):
         '''
         next.set_next(self.next) # Apunta al nodo de manera circular
         self.set_next(next)
-        self.numero_transacciones += 1
+        self.numero_clientes += 1
         print('Transacción exitosa')
 
     def get_all_transactions(self, nodo):
@@ -29,7 +29,7 @@ class Cajero(Nodo):
         '''
         # Verificar que nodo sea de tipo Cajero
         if isinstance(nodo, Cajero):
-            print('Total de transacciones: ', self.numero_transacciones)
+            print('Total de transacciones: ', self.numero_clientes)
         elif isinstance(nodo, Registro):
             print(f'ID: {nodo.id}, Nombre: {nodo.nombre}')
             self.get_all_transactions(nodo.get_next())
@@ -56,11 +56,11 @@ class Cajero(Nodo):
                 if nodo.get_next().id == id:
                     print(f'Eliminando -> ID: {nodo.get_next().id}, Nombre: {nodo.get_next().nombre}')
                     nodo.set_next(nodo.get_next().get_next())
-                    self.numero_transacciones -= 1
+                    self.numero_clientes -= 1
             self.delete_transaction(nodo.get_next(), id)
         elif isinstance(nodo, Cajero):
             if isinstance(nodo.get_next(), Registro):
                 if nodo.get_next().id == id:
                     print(f'Eliminando -> ID: {nodo.get_next().id}, Nombre: {nodo.get_next().nombre}')
                     nodo.set_next(nodo.get_next().get_next())
-                    self.numero_transacciones -= 1
+                    self.numero_clientes -= 1

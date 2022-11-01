@@ -98,6 +98,8 @@ class Cajero(Nodo):
                     if nodo.numero_transacciones > 0 and nodo.numero_transacciones <= 5:
                         nodo.numero_transacciones = 0
                         self.delete_client(nodo, id)
+                        self.turno = 0
+                        self.new_client(self.get_next(), nodo)
                         self.response = {
                             'message': 'Cliente atendido satisfactoriamente',
                         }

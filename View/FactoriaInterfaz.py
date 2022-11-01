@@ -19,14 +19,6 @@ class FabricaScreens2(AbstractInterfaz):
     def crear_pantalla(self):
         return Pantalla2().get_image()
 
-class FabricaAgrario(AbstractInterfaz):
-    def crear_pantalla(self):
-        return PantallaAgrario().get_image()
-
-class FabricaBancolombia(AbstractInterfaz):
-    def crear_pantalla(self):
-        return PantallaBancolombia().get_image()
-
 class FabricaDavivienda(AbstractInterfaz):
     def crear_pantalla(self):
         return PantallaDavivienda().get_image()

@@ -1,15 +1,20 @@
+'''
+0: Welcome screen
+1: Registrarse
+2: Notificación
+3: Iniciar sesión
+'''
 from tkinter import mainloop
 
 # Components
-from Cajero.Cajero import Cajero
 from Controller.ButtonController import ButtonController
 
 class Controller():
-    def __init__(self):
+    def __init__(self, cajero):
         self.view = None
         self.status = 0
-        self.cajero = Cajero()
-        self.button_controller = ButtonController(self.get_status)
+        self.cajero = cajero
+        self.button_controller = ButtonController(self.get_status, self.get_view, self.cajero)
 
     def set_status(self, status: int):
         '''
@@ -23,6 +28,12 @@ class Controller():
         '''
         self.view = view
     
+    def get_view(self):
+        '''
+        Retorna la vista
+        '''
+        return self.view
+
     def get_status(self):
         '''
         Retorna el estado del programa
@@ -69,7 +80,8 @@ class Controller():
         '''
         Inicia el servicio
         '''
+        print('Iniciando servicio...')
         self.cajero.start_service(self.cajero) # Comienza a apuntar a si mismo
         self.view.get_root()
-        self.view.screen_login()
+        self.view.screen_welcome()
         mainloop()

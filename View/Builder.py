@@ -32,20 +32,6 @@ class BuilderPantalla2(AbstractBuilder):
     def build_pantalla(self):
         return self.abstract_interfaz.crear_pantalla()
 
-class BuilderAgrario(AbstractBuilder):
-    def __init__(self):
-        self.abstract_interfaz = FabricaAgrario()
-    
-    def build_pantalla(self):
-        return self.abstract_interfaz.crear_pantalla()
-
-class BuilderBancolombia(AbstractBuilder):
-    def __init__(self):
-        self.abstract_interfaz = FabricaBancolombia()
-    
-    def build_pantalla(self):
-        return self.abstract_interfaz.crear_pantalla()
-
 class BuilderDavivienda(AbstractBuilder):
     def __init__(self):
         self.abstract_interfaz = FabricaDavivienda()

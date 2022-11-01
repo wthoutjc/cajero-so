@@ -20,7 +20,7 @@ class Cajero(Nodo):
 
     def new_client(self, nodo, new_nodo:Registro):
         '''
-        Inicia una nuev cliente
+        Inicia un nuevo cliente
         Args:
             -new_nodo: Registro
         '''

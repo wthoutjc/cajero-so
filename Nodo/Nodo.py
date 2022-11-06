@@ -4,11 +4,9 @@ if typing.TYPE_CHECKING:
     from Client.Client import Client
 
 class Nodo:
-    def __init__(self, numero_clientes = 0):
+    def __init__(self):
         self.next = None
         self.socketio = None
-        self.numero_clientes = numero_clientes
-        self.response = None
 
         self.clientes = []
 
@@ -34,10 +32,9 @@ class Nodo:
             # Es cajero
             new_nodo.set_next(nodo.get_next()) # Apunta al nodo de manera circular
             nodo.set_next(new_nodo)
-            self.numero_clientes += 1
             print(f'Agregando -> Nombre: {new_nodo.nombre}; Número de transacciones: {new_nodo.numero_transacciones}')
 
-    def atender_cliente(self, nodo):
+    def atender_cliente(self, nodo, nodo_inicial):
         '''
         Método que atiende un cliente
         Args:
@@ -45,38 +42,40 @@ class Nodo:
         '''
         if nodo.numero_transacciones == 0:
             self.response = {
-                'message': 'El cliente no tiene transacciones pendientes',
+                'message': f'El cliente {nodo.nombre} no tiene transacciones pendientes',
             }
-        if nodo.numero_transacciones > 0 and nodo.numero_transacciones <= 5:
-            nodo.numero_transacciones = 0
-            self.delete_client(nodo, id)
+        elif nodo.numero_transacciones > 0 and nodo.numero_transacciones <= 5:
+            self.delete_client(nodo, nodo_inicial)
             self.response = {
-                'message': 'Cliente atendido satisfactoriamente',
+                'message': f'El cliente {nodo.nombre} ha sido atendido satisfactoriamente',
             }
         elif nodo.numero_transacciones > 5:
             nodo.numero_transacciones -= 5
-            self.delete_client(nodo, id)
+            self.delete_client(nodo, nodo_inicial)
             self.nuevo_nodo(self.get_next(), nodo)
             self.response = {
-                'message': 'Al cliente se le han restado 5 transacciones',
+                'message': f'Al cliente {nodo.nombre} se le han restado 5 transacciones',
+            }
+        else:
+            self.response = {
+                'message': 'El cliente no existe',
             }
 
-    def delete_client(self, nodo):
+    def delete_client(self, nodo, nodo_inicial):
         '''
         Método que elimina un cliente
         Args:
             -id: str
         '''
-        print(f'Eliminando -> ID: {nodo.get_next().id}, Nombre: {nodo.get_next().nombre}')
-        nodo.set_next(nodo.get_next().get_next())
-        self.numero_clientes -= 1   
+        print(f'Eliminando -> Nombre: {nodo.nombre}; Número de transacciones: {nodo.numero_transacciones}')
+        nodo_inicial.set_next(nodo.get_next())
     
     def push_all_clients(self, nodo, type_client):
         '''
         Retorna todos los clientes
         '''
-        if type(nodo.get_next()) == type(type_client):
-            self.clientes.append([nodo.get_next().nombre, nodo.get_next().numero_transacciones])
+        if type(nodo) == type(type_client):
+            self.clientes.append([nodo.nombre, nodo.numero_transacciones])
             self.push_all_clients(nodo.get_next(), type_client)
     
     def set_all_clients(self, clientes):
@@ -90,12 +89,6 @@ class Nodo:
         Retorna todos los clientes
         '''
         return self.clientes
-
-    def get_numero_clientes(self):
-        '''
-        Retorna el número de clientes
-        '''
-        return self.numero_clientes
 
     def get_response(self):
         '''

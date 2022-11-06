@@ -15,9 +15,6 @@ from Client.Client import Client
 from faker import Faker
 Faker.seed(datetime.datetime.now())
 
-# DB
-nodo = Nodo()
-
 # LOGS
 logging.basicConfig(filename='client.log', level=logging.DEBUG)
 
@@ -29,8 +26,10 @@ from threading import Thread
 
 class SocketIOClient(object):
     def __init__(self, app):
+        self.nodo = Nodo()
         self.app = app
-        nodo.start_service(nodo)
+        print('Iniciando servicio..')
+        self.nodo.start_service(self.nodo)
         CORS(self.app)
 
         self.socketio = SocketIO(app, cors_allowed_origins='*', async_mode="threading")
@@ -45,13 +44,11 @@ class SocketIOClient(object):
             self.thread_client = None
     
     def generate_client(self):
-        nodo.set_all_clients([])
+        self.nodo.set_all_clients([])
 
-        # Error: No devuelve al primer cliente
-
-        nodo.nuevo_nodo(nodo.get_next(), Client(fake.name(), fake.random_int(1, 10)))
-        nodo.push_all_clients(nodo.get_next(), Client('Juan', 5))
-        clientes = nodo.get_all_clients()
+        self.nodo.nuevo_nodo(self.nodo.get_next(), Client(fake.name(), fake.random_int(1, 10)))
+        self.nodo.push_all_clients(self.nodo.get_next(), Client('Juan', 5))
+        clientes = self.nodo.get_all_clients()
 
         print(clientes)
 

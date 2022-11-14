@@ -1,97 +1,83 @@
-import typing
+# Herramientas
+import datetime
 
-if typing.TYPE_CHECKING:
-    from Client.Client import Client
+# Fake data
+from faker import Faker
+Faker.seed(datetime.datetime.now())
+fake = Faker('es-ES')
 
 class Nodo:
-    def __init__(self):
+    def __init__(self, type, tiempo_llegada=0, rafaga=0):
         self.next = None
         self.socketio = None
+        self.type = type
 
-        self.clientes = []
+        # FCFS
+        self.tiempo_llegada = tiempo_llegada
+        self.rafaga = rafaga
+        self.tiempo_comienzo = 0
+        self.tiempo_final = self.tiempo_comienzo + self.rafaga
+        self.tiempo_retorno = self.tiempo_final - self.tiempo_llegada
+        self.tiempo_espera = self.tiempo_retorno - self.rafaga
 
+        # Density
+        self.density = fake.random_int(min=0, max=6)
+
+        self.procesos = []
+            
     def set_next(self, next):
         self.next = next
 
     def get_next(self):
         return self.next
 
-    def start_service(self, nodo):
+    def iniciar_servicio(self, nodo):
         self.set_next(nodo)
 
-    def nuevo_nodo(self, nodo, new_nodo: 'Client'):
+    def nuevo_nodo(self, nodo, new_nodo):
         '''
-        Inicia un nuevo cliente
+        Inicia un nuevo proceso
         Args:
             -new_nodo: Client
         '''
-        print(type(nodo.get_next()))
-        if type(nodo.get_next()) == type(new_nodo):
+        if nodo.get_next().type == new_nodo.type:
             self.nuevo_nodo(nodo.get_next(), new_nodo)
         else:
-            # Es cajero
+            # Es nodo inicial
+            new_nodo.tiempo_comienzo = nodo.rafaga + nodo.tiempo_comienzo
+            new_nodo.tiempo_final = (nodo.rafaga + nodo.tiempo_comienzo) + new_nodo.rafaga
+            new_nodo.tiempo_retorno = ((nodo.rafaga + nodo.tiempo_comienzo) + new_nodo.rafaga) - new_nodo.tiempo_llegada
+            new_nodo.tiempo_espera = (((nodo.rafaga + nodo.tiempo_comienzo) + new_nodo.rafaga) - new_nodo.tiempo_llegada) - new_nodo.rafaga
+
             new_nodo.set_next(nodo.get_next()) # Apunta al nodo de manera circular
             nodo.set_next(new_nodo)
-            print(f'Agregando -> Nombre: {new_nodo.nombre}; Número de transacciones: {new_nodo.numero_transacciones}')
-
-    def atender_cliente(self, nodo, nodo_inicial):
+            print(f'Agregando Nodo: {new_nodo.type} - Densidad: {new_nodo.density} - Tiempo de llegada: {new_nodo.tiempo_llegada} - Rafaga: {new_nodo.rafaga} - Tiempo de comienzo: {new_nodo.tiempo_comienzo} - Tiempo final: {new_nodo.tiempo_final} - Tiempo de retorno: {new_nodo.tiempo_retorno} - Tiempo de espera: {new_nodo.tiempo_espera}')
+        
+    def eliminar(self, nodo, nodo_inicial):
         '''
-        Método que atiende un cliente
+        Método que elimina un proceso
         Args:
             -id: str
         '''
-        if nodo.numero_transacciones == 0:
-            self.response = {
-                'message': f'El cliente {nodo.nombre} no tiene transacciones pendientes',
-            }
-        elif nodo.numero_transacciones > 0 and nodo.numero_transacciones <= 5:
-            self.delete_client(nodo, nodo_inicial)
-            self.response = {
-                'message': f'El cliente {nodo.nombre} ha sido atendido satisfactoriamente',
-            }
-        elif nodo.numero_transacciones > 5:
-            nodo.numero_transacciones -= 5
-            self.delete_client(nodo, nodo_inicial)
-            self.nuevo_nodo(self.get_next(), nodo)
-            self.response = {
-                'message': f'Al cliente {nodo.nombre} se le han restado 5 transacciones',
-            }
-        else:
-            self.response = {
-                'message': 'El cliente no existe',
-            }
-
-    def delete_client(self, nodo, nodo_inicial):
-        '''
-        Método que elimina un cliente
-        Args:
-            -id: str
-        '''
-        print(f'Eliminando -> Nombre: {nodo.nombre}; Número de transacciones: {nodo.numero_transacciones}')
+        print(f'Eliminando -> {nodo.type} - Tiempo de llegada: {nodo.tiempo_llegada} - Rafaga: {nodo.rafaga} - Tiempo de comienzo: {nodo.tiempo_comienzo} - Tiempo final: {nodo.tiempo_final} - Tiempo de retorno: {nodo.tiempo_retorno} - Tiempo de espera: {nodo.tiempo_espera}')
         nodo_inicial.set_next(nodo.get_next())
     
-    def push_all_clients(self, nodo, type_client):
+    def iterar_procesos(self, nodo):
         '''
         Retorna todos los clientes
         '''
-        if type(nodo) == type(type_client):
-            self.clientes.append([nodo.nombre, nodo.numero_transacciones])
-            self.push_all_clients(nodo.get_next(), type_client)
+        if nodo.type == 'Proceso':
+            self.procesos.append([nodo.tiempo_llegada, nodo.rafaga, nodo.tiempo_comienzo, nodo.tiempo_final, nodo.tiempo_retorno, nodo.tiempo_espera])
+            self.iterar_procesos(nodo.get_next())
     
-    def set_all_clients(self, clientes):
+    def set_all_process(self, procesos):
         '''
-        Setea todos los clientes
+        Setea todos los procesos
         '''
-        self.clientes = clientes
+        self.procesos = procesos
 
-    def get_all_clients(self):
+    def get_all_process(self):
         '''
         Retorna todos los clientes
         '''
-        return self.clientes
-
-    def get_response(self):
-        '''
-        Retorna la respuesta
-        '''
-        return self.response
+        return self.procesos

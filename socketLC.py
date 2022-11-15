@@ -28,6 +28,7 @@ class SocketIOClient(object):
         self.app = app
         CORS(self.app)
         self.tiempo_llegada = 0
+        self.id = 0
         self.counter = 0
 
         self.stop_thread = False
@@ -35,14 +36,14 @@ class SocketIOClient(object):
         self.nodo = Nodo('Inicial')
         print('Iniciando servicio')
         self.nodo.iniciar_servicio(self.nodo)
-
         self.socketio = SocketIO(app, cors_allowed_origins='*', async_mode="threading")
+
+        self.socketio.emit('cycle', 0)
 
         @self.socketio.on('connect')
         def on_connect():
             self.thread_crear_procesos = Thread(target=self.crear_procesos)
             self.thread_crear_procesos.start()
-            self.socketio.emit('cycle', 0)
         
         @self.socketio.on('disconnect')
         def on_disconnect():
@@ -58,31 +59,23 @@ class SocketIOClient(object):
         @self.socketio.on('stop')
         def on_stop(data):
             self.stop_thread = True
-        
-        @self.socketio.on('unblocked')
-        def on_stop(data):
-            self.nodo.eliminar(self.nodo.get_next(), self.nodo)
-            self.nodo.set_all_process([])
-
-            self.nodo.iterar_procesos(self.nodo.get_next())
-            procesos = self.nodo.get_all_process()
-
-            self.socketio.emit('data', procesos)
-            self.socketio.emit('unblocked', {"ok": True, "message": 'Proceso desbloqueado satisfactoriamente'})
-            self.stop_thread = False
 
     def crear_procesos(self):
         self.nodo.set_all_process([])
 
-        nuevo_nodo = Nodo('Proceso', self.tiempo_llegada, fake.random_int(2, 10))
+        nuevo_nodo = Nodo('Proceso', self.id, self.tiempo_llegada, fake.random_int(2, 10))
         self.nodo.nuevo_nodo(self.nodo.get_next(), nuevo_nodo)
 
+        self.id += 1
         self.tiempo_llegada += 1
 
         self.nodo.iterar_procesos(self.nodo.get_next())
         procesos = self.nodo.get_all_process()
 
         self.socketio.emit('data', procesos)
+
+        data_table = self.nodo.get_data_table()
+        self.socketio.emit('data-table', data_table)
         time.sleep(20)
         self.crear_procesos()
     
@@ -91,24 +84,35 @@ class SocketIOClient(object):
             self.stop_thread = True
             self.counter = 0
             self.socketio.emit('cycle', self.counter)
-        elif self.counter == self.nodo.get_next().tiempo_final + 1:
-            if self.nodo.get_next().density >= 5:
-                self.stop_thread = True
-                self.socketio.emit('blocked', True)
-            else:
-                self.nodo.eliminar(self.nodo.get_next(), self.nodo)
-                self.nodo.set_all_process([])
-                self.nodo.iterar_procesos(self.nodo.get_next())
-                procesos = self.nodo.get_all_process()
+        elif self.nodo.get_next().blocked != 0 and (self.nodo.get_next().blocked + self.nodo.get_next().tiempo_comienzo) == self.counter - 1:
+            nuevo_nodo = self.nodo.get_next()
+            nuevo_nodo.rafaga = nuevo_nodo.rafaga - nuevo_nodo.blocked
+            nuevo_nodo.tiempo_llegada = self.tiempo_llegada
 
-                self.socketio.emit('data', procesos)
-    
+            self.nodo.eliminar(self.nodo.get_next(), self.nodo)
+            self.nodo.nuevo_nodo(self.nodo.get_next(), nuevo_nodo)
+
+            self.tiempo_llegada += 1
+
+            self.nodo.set_all_process([])
+            self.nodo.iterar_procesos(self.nodo.get_next())
+            procesos = self.nodo.get_all_process()
+
+            self.socketio.emit('data', procesos)
+        elif self.counter == self.nodo.get_next().tiempo_final + 1:
+            self.nodo.eliminar(self.nodo.get_next(), self.nodo)
+            self.nodo.set_all_process([])
+            self.nodo.iterar_procesos(self.nodo.get_next())
+            procesos = self.nodo.get_all_process()
+
+            self.socketio.emit('data', procesos)
+            
     def iniciar_ciclo(self):
         if not self.stop_thread:
             self.socketio.emit('cycle', self.counter)
             self.counter += 1
-            self.atender_procesos()
             time.sleep(1)
+            self.atender_procesos()
             self.iniciar_ciclo()
 
     def run(self):

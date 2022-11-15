@@ -7,10 +7,11 @@ Faker.seed(datetime.datetime.now())
 fake = Faker('es-ES')
 
 class Nodo:
-    def __init__(self, type, tiempo_llegada=0, rafaga=0):
+    def __init__(self, type, id=None, tiempo_llegada=0, rafaga=0):
         self.next = None
         self.socketio = None
         self.type = type
+        self.id = id
 
         # FCFS
         self.tiempo_llegada = tiempo_llegada
@@ -22,8 +23,12 @@ class Nodo:
 
         # Density
         self.density = fake.random_int(min=0, max=6)
+        self.blocked = 0
 
         self.procesos = []
+
+        # Table data
+        self.table_data = []
             
     def set_next(self, next):
         self.next = next
@@ -49,10 +54,14 @@ class Nodo:
             new_nodo.tiempo_retorno = ((nodo.rafaga + nodo.tiempo_comienzo) + new_nodo.rafaga) - new_nodo.tiempo_llegada
             new_nodo.tiempo_espera = (((nodo.rafaga + nodo.tiempo_comienzo) + new_nodo.rafaga) - new_nodo.tiempo_llegada) - new_nodo.rafaga
 
+            # Estado de bloqueado
+            new_nodo.blocked = fake.random_int(min=0, max=new_nodo.rafaga - 1) if new_nodo.density >= 5 else 0
+
             new_nodo.set_next(nodo.get_next()) # Apunta al nodo de manera circular
             nodo.set_next(new_nodo)
-            print(f'Agregando Nodo: {new_nodo.type} - Densidad: {new_nodo.density} - Tiempo de llegada: {new_nodo.tiempo_llegada} - Rafaga: {new_nodo.rafaga} - Tiempo de comienzo: {new_nodo.tiempo_comienzo} - Tiempo final: {new_nodo.tiempo_final} - Tiempo de retorno: {new_nodo.tiempo_retorno} - Tiempo de espera: {new_nodo.tiempo_espera}')
-        
+            print(f'Agregando Nodo: {new_nodo.type} - Densidad: {new_nodo.density} - Tiempo de llegada: {new_nodo.tiempo_llegada} - Rafaga: {new_nodo.rafaga} - Tiempo de comienzo: {new_nodo.tiempo_comienzo} - Tiempo final: {new_nodo.tiempo_final} - Tiempo de retorno: {new_nodo.tiempo_retorno} - Tiempo de espera: {new_nodo.tiempo_espera} -  Bloqueo: {new_nodo.blocked}')
+            self.table_data.append([new_nodo.id, new_nodo.tiempo_llegada, new_nodo.rafaga, new_nodo.tiempo_comienzo, new_nodo.tiempo_final, new_nodo.tiempo_retorno, new_nodo.tiempo_espera, new_nodo.blocked])
+
     def eliminar(self, nodo, nodo_inicial):
         '''
         Método que elimina un proceso
@@ -64,10 +73,10 @@ class Nodo:
     
     def iterar_procesos(self, nodo):
         '''
-        Retorna todos los clientes
+        Retorna todos los procesos
         '''
         if nodo.type == 'Proceso':
-            self.procesos.append([nodo.tiempo_llegada, nodo.rafaga, nodo.tiempo_comienzo, nodo.tiempo_final, nodo.tiempo_retorno, nodo.tiempo_espera])
+            self.procesos.append([nodo.id, nodo.tiempo_llegada, nodo.rafaga, nodo.tiempo_comienzo, nodo.tiempo_final, nodo.tiempo_retorno, nodo.tiempo_espera, nodo.blocked])
             self.iterar_procesos(nodo.get_next())
     
     def set_all_process(self, procesos):
@@ -78,6 +87,12 @@ class Nodo:
 
     def get_all_process(self):
         '''
-        Retorna todos los clientes
+        Retorna todos los procesos
         '''
         return self.procesos
+    
+    def get_data_table(self):
+        '''
+        Retorna todos los procesos
+        '''
+        return self.table_data

@@ -33,12 +33,15 @@ class SocketIOClient(object):
         self.tiempo_llegada = 0
         self.id = 0
         self.counter = 0
+        self.quantum = 4
 
-        self.lienzo_gantt = []
+        self.lienzo_procesos = []
 
         self.stop_thread = False
+        self.stop_cargar_proceso = False
 
-        self.nodo = Nodo('Inicial')
+        self.nodo = Nodo()
+        self.nodo.rr.set_quantum(self.quantum)
 
         self.socketio = SocketIO(app, cors_allowed_origins='*', async_mode="threading")
         self.socketio.emit('cycle', 0)
@@ -48,6 +51,7 @@ class SocketIOClient(object):
             self.thread_crear_procesos = Thread(target=self.crear_procesos)
             self.thread_crear_procesos.start()
             self.socketio.emit('data', [])
+            self.socketio.emit('traffic_light-data', [])
             
         @self.socketio.on('disconnect')
         def on_disconnect():
@@ -62,56 +66,63 @@ class SocketIOClient(object):
         @self.socketio.on('stop')
         def on_stop(data):
             self.stop_thread = True
+        
+        @self.socketio.on('quantum')
+        def on_stop(data):
+            print(f'Quantum: {data}')
+            self.quantum = data
+            self.nodo.rr.set_quantum(data)
 
     def crear_procesos(self):
-        self.nodo.nuevo_nodo(Nodo('Proceso', self.id, self.tiempo_llegada, fake.random_int(2, 10)))
+        self.nodo.nuevo_nodo(Nodo(self.id, self.tiempo_llegada, fake.random_int(2, 10)))
 
         self.id += 1
         self.tiempo_llegada += 1
 
-        self.nodo.ordenar()
+        self.socketio.emit('data-table', self.lienzo_procesos)
 
-        lienzo_tabla = self.nodo.get_lienzo_tabla()
+        self.socketio.emit('round_robin-data', self.nodo.rr.get_procesos())
+        self.socketio.emit('sjf-data', self.nodo.sjf.get_procesos())
+        self.socketio.emit('fcfs-data', self.nodo.fcfs.get_procesos())
 
-        self.socketio.emit('data-table', lienzo_tabla)
         time.sleep(10)
         self.crear_procesos()
     
     def atender_procesos(self):
-        procesos = self.nodo.get_procesos()
-        if self.continue_node:
-            self.continue_node = False
-            self.nodo.atender_nodo(procesos[0])
-            self.lienzo_gantt.append(procesos[0].copy())
+        try:
+            if not self.stop_cargar_proceso:
+                self.nodo.cargar_proceso()
+                self.stop_cargar_proceso = True
+            procesos = self.nodo.get_procesos()
+            if self.continue_node: # Primer nodo
+                self.socketio.emit('traffic_light-data', [procesos[0]])
+                self.continue_node = False
+                self.nodo.atender_nodo(procesos[0])
+                self.lienzo_procesos.append(procesos[0].copy())
+            elif procesos[0][7] != 0 and (procesos[0][7] + procesos[0][3]) == self.counter - 1: # Presenta bloqueo
+                self.nodo.cargar_proceso()
+                self.socketio.emit('traffic_light-data', [procesos[0], procesos[1]])
+                self.nodo.atender_nodo(procesos[1])
+                self.lienzo_procesos.append(procesos[1].copy())
 
-            lienzo_tabla = self.nodo.get_lienzo_tabla()
+                procesos[0][2] = procesos[0][2] - procesos[0][7]
+                self.nodo.nuevo_nodo(Nodo(procesos[0][0], procesos[0][1], procesos[0][2]))
+                self.nodo.eliminar()
+            elif self.counter == procesos[0][4] + 1: # Proceso normal
+                self.nodo.cargar_proceso()
+                self.socketio.emit('traffic_light-data', [procesos[0], procesos[1]])
+                self.nodo.atender_nodo(procesos[1])
+                self.lienzo_procesos.append(procesos[1].copy())
+                self.nodo.eliminar()
+        except ValueError as e:
+            print(e)
+        finally:
+            self.socketio.emit('data', self.lienzo_procesos)
+            self.socketio.emit('data-table', self.lienzo_procesos)
 
-            self.socketio.emit('data', self.lienzo_gantt)
-            self.socketio.emit('data-table', lienzo_tabla)
-        if procesos[0][7] != 0 and (procesos[0][7] + procesos[0][3]) == self.counter - 1:
-            self.nodo.atender_nodo(procesos[1])
-            self.lienzo_gantt.append(procesos[1].copy())
-
-            procesos[0][2] = procesos[0][2] - procesos[0][7]
-            procesos[0][1] = self.tiempo_llegada
-            self.nodo.nuevo_nodo(Nodo('Proceso', procesos[0][0], procesos[0][1], procesos[0][2]))
-            self.nodo.eliminar()
-
-            self.tiempo_llegada += 1
-
-            lienzo_tabla = self.nodo.get_lienzo_tabla()
-
-            self.socketio.emit('data', self.lienzo_gantt)
-            self.socketio.emit('data-table', lienzo_tabla)
-        elif self.counter == procesos[0][4] + 1:
-            self.nodo.atender_nodo(procesos[1])
-            self.lienzo_gantt.append(procesos[1].copy())
-            self.nodo.eliminar()
-
-            lienzo_tabla = self.nodo.get_lienzo_tabla()
-
-            self.socketio.emit('data', self.lienzo_gantt)
-            self.socketio.emit('data-table', lienzo_tabla)
+            self.socketio.emit('round_robin-data', self.nodo.rr.get_procesos())
+            self.socketio.emit('sjf-data', self.nodo.sjf.get_procesos())
+            self.socketio.emit('fcfs-data', self.nodo.fcfs.get_procesos())
             
     def iniciar_ciclo(self):
         if not self.stop_thread:
@@ -122,7 +133,7 @@ class SocketIOClient(object):
             self.iniciar_ciclo()
 
     def run(self):
-        self.socketio.run(self.app, port=8000, host="0.0.0.0", debug=True) #host="0.0.0.0" port=80
+        self.socketio.run(self.app, port=8000, host="0.0.0.0", debug=True)
         eventlet.monkey_patch(socket=True, select=True)
 
 

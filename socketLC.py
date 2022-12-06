@@ -61,7 +61,10 @@ class SocketIOClient(object):
         def on_start(data):
             self.stop_thread = False
             self.thread_iniciar_ciclo = Thread(target=self.iniciar_ciclo)
+            self.thread_envejer_procesos = Thread(target=self.envejer_procesos)
+
             self.thread_iniciar_ciclo.start()
+            self.thread_envejer_procesos.start()
 
         @self.socketio.on('stop')
         def on_stop(data):
@@ -72,9 +75,39 @@ class SocketIOClient(object):
             print(f'Quantum: {data}')
             self.quantum = data
             self.nodo.rr.set_quantum(data)
+        
+        @self.socketio.on('rr-new_process')
+        def on_rr_new_process(data):
+            print('Nuevo proceso en RR')
+            procesos = self.nodo.get_procesos()
+            print(f'PROCESOS: {procesos}')
+            if procesos and procesos[0] and procesos[0][9] != 'rr':
+                pass
+                # self.nodo.cargar_proceso()
+                # procesos[0][2] = (procesos[0][3] + procesos[0][2] - procesos[0][7]) - self.counter
+
+
+                # self.nodo.atender_nodo(procesos[1])
+                # self.lienzo_procesos.append(procesos[1].copy())
+                
+                # self.nodo.nuevo_nodo(Nodo(procesos[0][0], procesos[0][1], procesos[0][2]), False, procesos[0][9])
+                # self.nodo.eliminar()
+
+                # self.socketio.emit('data', self.lienzo_procesos)
+                # self.socketio.emit('data-table', self.lienzo_procesos)
+
+                # self.socketio.emit('round_robin-data', self.nodo.rr.get_procesos())
+                # self.socketio.emit('sjf-data', self.nodo.sjf.get_procesos())
+                # self.socketio.emit('fcfs-data', self.nodo.fcfs.get_procesos())
+
+    def envejer_procesos(self):
+        print('Envejecer procesos')
+        self.nodo.envejecimiento_nodos()
+        time.sleep(25)
+        self.envejer_procesos()
 
     def crear_procesos(self):
-        self.nodo.nuevo_nodo(Nodo(self.id, self.tiempo_llegada, fake.random_int(2, 10)))
+        self.nodo.nuevo_nodo(Nodo(self.id, 0, fake.random_int(2, 10)))
 
         self.id += 1
         self.tiempo_llegada += 1
@@ -106,7 +139,7 @@ class SocketIOClient(object):
                 self.lienzo_procesos.append(procesos[1].copy())
 
                 procesos[0][2] = procesos[0][2] - procesos[0][7]
-                self.nodo.nuevo_nodo(Nodo(procesos[0][0], procesos[0][1], procesos[0][2]))
+                self.nodo.nuevo_nodo(Nodo(procesos[0][0], procesos[0][1], procesos[0][2]), False, procesos[0][9])
                 self.nodo.eliminar()
             elif self.counter == procesos[0][4] + 1: # Proceso normal
                 self.nodo.cargar_proceso()

@@ -78,32 +78,47 @@ class SocketIOClient(object):
         
         @self.socketio.on('rr-new_process')
         def on_rr_new_process(data):
+            '''
+            Atiende un nodo
+                0 id, 
+                1 tiempo_llegada, 
+                2 rafaga, 
+                3 tiempo_comienzo, 
+                4 tiempo_final, 
+                5 tiempo_retorno, 
+                6 tiempo_espera, 
+                7 blocked,
+                8 rafaga_ejecutada
+            '''
             print('Nuevo proceso en RR')
             procesos = self.nodo.get_procesos()
             print(f'PROCESOS: {procesos}')
             if procesos and procesos[0] and procesos[0][9] != 'rr':
-                pass
-                # self.nodo.cargar_proceso()
-                # procesos[0][2] = (procesos[0][3] + procesos[0][2] - procesos[0][7]) - self.counter
+                print(procesos)
+                print(self.counter)
+                self.nodo.cargar_proceso()
+                print(f'NUEVA RAFAGA {(procesos[0][2] + procesos[0][3]) - (self.counter - 1)}')
+                procesos[0][2] = self.counter - procesos[0][3]
+                procesos[0][4] = self.counter
 
 
-                # self.nodo.atender_nodo(procesos[1])
-                # self.lienzo_procesos.append(procesos[1].copy())
+                self.nodo.atender_nodo(procesos[1])
+                self.lienzo_procesos.append(procesos[1].copy())
                 
-                # self.nodo.nuevo_nodo(Nodo(procesos[0][0], procesos[0][1], procesos[0][2]), False, procesos[0][9])
-                # self.nodo.eliminar()
+                self.nodo.nuevo_nodo(Nodo(procesos[0][0], procesos[0][1], procesos[0][2]), False, procesos[0][9])
+                self.nodo.eliminar()
 
-                # self.socketio.emit('data', self.lienzo_procesos)
-                # self.socketio.emit('data-table', self.lienzo_procesos)
+                self.socketio.emit('data', self.lienzo_procesos)
+                self.socketio.emit('data-table', self.lienzo_procesos)
 
-                # self.socketio.emit('round_robin-data', self.nodo.rr.get_procesos())
-                # self.socketio.emit('sjf-data', self.nodo.sjf.get_procesos())
-                # self.socketio.emit('fcfs-data', self.nodo.fcfs.get_procesos())
+                self.socketio.emit('round_robin-data', self.nodo.rr.get_procesos())
+                self.socketio.emit('sjf-data', self.nodo.sjf.get_procesos())
+                self.socketio.emit('fcfs-data', self.nodo.fcfs.get_procesos())
 
     def envejer_procesos(self):
+        time.sleep(25)
         print('Envejecer procesos')
         self.nodo.envejecimiento_nodos()
-        time.sleep(25)
         self.envejer_procesos()
 
     def crear_procesos(self):

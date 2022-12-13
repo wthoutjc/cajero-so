@@ -73,7 +73,6 @@ class Nodo:
             8 rafaga_ejecutada
         '''
         nodo_anterior = self.procesos[0]
-        print(f'NODO ANT -> #{nodo_anterior[0]} T. Llegada {nodo_anterior[1]} - Rafaga {nodo_anterior[2]} - Rafaga Ejecutada {nodo_anterior[8]} - T.Comienzo {nodo_anterior[3]} - T. Final {nodo_anterior[4]} - T. Retorno {nodo_anterior[5]} - T. Espera {nodo_anterior[6]} - BLoqueo {nodo_anterior[7]}')
         nodo[3] = nodo[1] if nodo_anterior == nodo else nodo_anterior[4] + nodo[1] # Tiempo de comienzo
 
         if nodo[9] == 'rr':
@@ -91,7 +90,6 @@ class Nodo:
         nodo[4] = nodo[8] + nodo[3] # Tiempo final
         nodo[5] = nodo[4] - nodo[1] # Tiempo de retorno
         nodo[6] = nodo[5] - nodo[8] # Tiempo de espera
-        print(f'NODO ACT -> #{nodo[0]} T. Llegada {nodo[1]} - Rafaga {nodo[2]} - Rafaga Ejecutada {nodo[8]} - T.Comienzo {nodo[3]} - T. Final {nodo[4]} - T. Retorno {nodo[5]} - T. Espera {nodo[6]} - BLoqueo {nodo[7]}')
 
     def cargar_proceso(self):
         '''
@@ -150,7 +148,6 @@ class Nodo:
         Args:
             -id: str
         '''
-        print(f'Eliminando proceso #{self.procesos[0][0]}')
         self.procesos.pop(0)
 
     def set_procesos(self, procesos):
